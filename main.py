@@ -45,7 +45,10 @@ def copyfoldertree():
 
 def compress_images_directory(directory_name, compressed_folder_path, compressedtitle='YES', max_size=1048576, quality=85):
     # Define a list of valid image extensions
-    valid_extensions = ['.jpeg', '.jpg', '.png', '.heic', '.webp']
+    valid_extensions = ['.jpeg', '.jpg', '.png', '.webp']
+
+    all_file_size = 0
+    all_file_savings = 0
 
     # Loop over all files in the specified directory
     for filename in os.listdir(directory_name):
@@ -57,9 +60,11 @@ def compress_images_directory(directory_name, compressed_folder_path, compressed
             # Check if the file has a valid image extension
             extension = os.path.splitext(file_path)[1].lower()
             if extension in valid_extensions:
+                
 
                 # Check if the file is larger than the max size
                 current_size = os.path.getsize(file_path)
+                all_file_size += current_size
                 kb_size = current_size / 1000
                 print('File size is ' + str(kb_size) + 'kb.')
                 if current_size > max_size:
@@ -80,14 +85,26 @@ def compress_images_directory(directory_name, compressed_folder_path, compressed
                         compressed_file_name = f"{os.path.splitext(filename)[0]}{extension}"
                     compressed_file_path = os.path.join(compressed_folder_path, compressed_file_name)
                     image.save(compressed_file_path, optimize=True, quality=quality)
-
+                    new_size = os.path.getsize(file_path)
+                    all_file_savings += new_size
                     print("Image compression completed successfully.")
+                elif current_size < max_size and current_size > 0:
+                    image = Image.open(file_path)
+                    compressed_file_name = f"{os.path.splitext(filename)[0]}{extension}"
+                    compressed_file_path = os.path.join(compressed_folder_path, compressed_file_name)
+                    image.save(compressed_file_path)
+                elif current_size == 0:
+                    continue
             else:
                 print("Image compression not completed.")
+
+    return [all_file_size, all_file_savings]
 
 def compress_images_all(compresseddirname="", compressedtitle="YES", max_size=1048576, quality=85):
         # Get the home directory
     home_dir = os.path.expanduser("~")
+    total_file_size = 0
+    total_file_savings = 0
 
     # Create the source directory name
     today = datetime.date.today().strftime("%Y-%m-%d")
@@ -100,8 +117,18 @@ def compress_images_all(compresseddirname="", compressedtitle="YES", max_size=10
     for root, dirs, files in os.walk(source_dir):
         for dir in dirs:
             # Call compress_images_all() on the directory
-            compress_images_directory(os.path.join(root, dir), os.path.join(root.replace(source_dir, destination_dir), dir), compressedtitle, max_size, quality)
-
+            file_sizes_list = compress_images_directory(os.path.join(root, dir), os.path.join(root.replace(source_dir, destination_dir), dir), compressedtitle, max_size, quality)
+            
+            total_file_size += file_sizes_list[0]
+            total_file_savings += file_sizes_list[1]
+    current_file_size = total_file_size - total_file_savings
+    total_file_savings_mb = total_file_savings / 1000000
+    current_file_size_mb = current_file_size / 1000000
+    total_file_size_mb = total_file_size /1000000
+    print("Original File is " + str(total_file_size_mb) + "mb")
+    print("Current File is " + str(current_file_size_mb) + "mb")
+    print("File Savings are " + str(total_file_savings_mb) + "mb")
+    
     print("Directory structure copied and images compressed successfully to", destination_dir)
 
 
