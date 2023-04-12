@@ -3,6 +3,7 @@ import math
 import datetime
 from PIL import Image
 import shutil
+import pyheif
 
 
 def copyfoldertree():
@@ -43,9 +44,78 @@ def copyfoldertree():
     print("Directory structure copied successfully to", destination_dir)
     return base_dir_name
 
+# def compress_images_directory(directory_name, compressed_folder_path, compressedtitle='YES', max_size=1048576, quality=85):
+#     # Define a list of valid image extensions
+#     valid_extensions = ['.jpeg', '.jpg', '.png', '.webp', '.heic']
+
+#     all_file_size = 0
+#     all_file_savings = 0
+
+#     # Loop over all files in the specified directory
+#     for filename in os.listdir(directory_name):
+#         file_path = os.path.join(directory_name, filename)
+
+#         # Check if the file is a regular file (not a directory)
+#         if os.path.isfile(file_path):
+
+#             # Check if the file has a valid image extension
+#             extension = os.path.splitext(file_path)[1].lower()
+#             if extension in valid_extensions:
+                
+
+#                 # Check if the file is larger than the max size
+#                 current_size = os.path.getsize(file_path)
+#                 all_file_size += current_size
+#                 kb_size = current_size / 1000
+#                 print('File size is ' + str(kb_size) + 'kb')
+#                 if current_size > max_size:
+
+#                     # Open the image and calculate new dimensions that maintain the aspect ratio and result in a file size below the max size
+#                     if extension == '.heic':
+#                         heif_file = pyheif.read(file_path)
+#                         image = Image.frombytes(heif_file.mode, heif_file.size, heif_file.data)
+#                     else:
+#                         image = Image.open(file_path)
+
+
+#                     # image = Image.open(file_path)
+#                     width, height = image.size
+#                     aspect_ratio = width / height
+#                     new_width = math.sqrt(max_size * aspect_ratio)
+#                     new_height = new_width / aspect_ratio
+#                     new_dimensions = (int(new_width), int(new_height))
+
+#                     # Compress the image with the specified quality level and save it to the new folder with a new file name that includes the original file name and the "compressed" suffix
+#                     image = image.resize(new_dimensions, Image.ANTIALIAS)
+#                     if compressedtitle == "YES":
+#                         compressed_file_name = f"{os.path.splitext(filename)[0]}_compressed{extension}"
+#                     else:
+#                         compressed_file_name = f"{os.path.splitext(filename)[0]}{extension}"
+#                     compressed_file_path = os.path.join(compressed_folder_path, compressed_file_name)
+#                     image.save(compressed_file_path, optimize=True, quality=quality)
+#                     new_size = os.path.getsize(file_path)
+#                     all_file_savings += new_size
+#                     print("Image compression completed successfully.")
+#                 elif current_size < max_size and current_size > 0:
+#                     if extension == '.heic':
+#                         heif_file = pyheif.read(file_path)
+#                         image = Image.frombytes(heif_file.mode, heif_file.size, heif_file.data)
+#                     else:
+#                         image = Image.open(file_path)
+#                     # image = Image.open(file_path)
+#                     compressed_file_name = f"{os.path.splitext(filename)[0]}{extension}"
+#                     compressed_file_path = os.path.join(compressed_folder_path, compressed_file_name)
+#                     image.save(compressed_file_path)
+#                 elif current_size == 0:
+#                     continue
+#             else:
+#                 print("Image compression not completed.")
+
+#     return [all_file_size, all_file_savings]
+
 def compress_images_directory(directory_name, compressed_folder_path, compressedtitle='YES', max_size=1048576, quality=85):
     # Define a list of valid image extensions
-    valid_extensions = ['.jpeg', '.jpg', '.png', '.webp']
+    valid_extensions = ['.jpeg', '.jpg', '.png', '.webp', '.heic']
 
     all_file_size = 0
     all_file_savings = 0
@@ -60,17 +130,22 @@ def compress_images_directory(directory_name, compressed_folder_path, compressed
             # Check if the file has a valid image extension
             extension = os.path.splitext(file_path)[1].lower()
             if extension in valid_extensions:
-                
 
                 # Check if the file is larger than the max size
                 current_size = os.path.getsize(file_path)
                 all_file_size += current_size
                 kb_size = current_size / 1000
-                print('File size is ' + str(kb_size) + 'kb.')
+                print('File size is ' + str(kb_size) + 'kb')
                 if current_size > max_size:
 
                     # Open the image and calculate new dimensions that maintain the aspect ratio and result in a file size below the max size
-                    image = Image.open(file_path)
+                    if extension == '.heic':
+                        heif_file = pyheif.read(file_path)
+                        image = Image.frombytes(heif_file.mode, heif_file.size, heif_file.data)
+                    else:
+                        image = Image.open(file_path)
+
+                    # image = Image.open(file_path)
                     width, height = image.size
                     aspect_ratio = width / height
                     new_width = math.sqrt(max_size * aspect_ratio)
@@ -89,16 +164,26 @@ def compress_images_directory(directory_name, compressed_folder_path, compressed
                     all_file_savings += new_size
                     print("Image compression completed successfully.")
                 elif current_size < max_size and current_size > 0:
-                    image = Image.open(file_path)
+                    if extension == '.heic':
+                        heif_file = pyheif.read(file_path)
+                        image = Image.frombytes(heif_file.mode, heif_file.size, heif_file.data)
+                    else:
+                        image = Image.open(file_path)
+                    # image = Image.open(file_path)
                     compressed_file_name = f"{os.path.splitext(filename)[0]}{extension}"
                     compressed_file_path = os.path.join(compressed_folder_path, compressed_file_name)
                     image.save(compressed_file_path)
                 elif current_size == 0:
                     continue
             else:
-                print("Image compression not completed.")
-
+                # Copy the file to the compressed folder path if the extension is not valid
+                compressed_file_name = f"{os.path.splitext(filename)[0]}{extension}"
+                compressed_file_path = os.path.join(compressed_folder_path, compressed_file_name)
+                shutil.copy(file_path, compressed_file_path)
+                print("File copied to compressed folder.")
+    
     return [all_file_size, all_file_savings]
+
 
 def compress_images_all(compresseddirname="", compressedtitle="YES", max_size=1048576, quality=85):
         # Get the home directory
